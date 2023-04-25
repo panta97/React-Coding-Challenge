@@ -80,6 +80,52 @@ export default connect(state => {
 
   /* YOUR CODE GOES HERE */
 
+  // set up custom user input to handle wildcards
+  const userInput = {
+    startPeriodTime: utils.checkDateisValid(state.userInput.startPeriod) ? state.userInput.startPeriod.getTime() : -Infinity,
+    endPeriodTime: utils.checkDateisValid(state.userInput.endPeriod) ? state.userInput.endPeriod.getTime() : Infinity,
+    startAccount: isNaN(state.userInput.startAccount) ? -Infinity : state.userInput.startAccount,
+    endAccount: isNaN(state.userInput.endAccount) ? Infinity : state.userInput.endAccount,
+  }
+
+  balance = state.journalEntries
+  .filter((jrnl) => {
+    if (userInput.startPeriodTime <= jrnl.PERIOD.getTime() &&
+        userInput.endPeriodTime >= jrnl.PERIOD.getTime() &&
+        userInput.startAccount <= jrnl.ACCOUNT &&
+        userInput.endAccount >= jrnl.ACCOUNT
+        ) {
+          return true;
+    }
+    return false;
+  });
+
+  balance = Object.values(balance
+  .reduce((acc, curr) => {
+    if (acc[curr.ACCOUNT]) {
+      acc[curr.ACCOUNT].DEBIT += curr.DEBIT;
+      acc[curr.ACCOUNT].CREDIT += curr.CREDIT;
+      return acc;
+    } else {
+      return {...acc, [curr.ACCOUNT]: {...curr}}
+    }
+  } , {}));
+
+  const accountDict = state.accounts.reduce((acc, curr) => {
+    const { ACCOUNT, LABEL } = curr;
+    return {...acc, [ACCOUNT]: LABEL};
+  } , {});
+
+  balance = balance
+  .filter((jrnl) => accountDict[jrnl.ACCOUNT])
+  .map((jrnl) => ({
+    ACCOUNT: jrnl.ACCOUNT,
+    DESCRIPTION: accountDict[jrnl.ACCOUNT],
+    DEBIT: jrnl.DEBIT,
+    CREDIT: jrnl.CREDIT,
+    BALANCE: jrnl.DEBIT - jrnl.CREDIT,
+  }));
+
   const totalCredit = balance.reduce((acc, entry) => acc + entry.CREDIT, 0);
   const totalDebit = balance.reduce((acc, entry) => acc + entry.DEBIT, 0);
 

@@ -56,3 +56,7 @@ export const parseUserInput = str => {
     format
   };
 }
+
+export const checkDateisValid = (date) =>{
+  return date instanceof Date && !isNaN(date);
+ }
